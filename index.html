@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1b4332">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Botânica">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Mundo das Plantas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:#1b4332;}
+body{font-family:'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;}
+
+.app{width:100%;height:100vh;background:#1b4332;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+
+.floating-leaf{position:absolute;pointer-events:none;font-size:28px;animation:floatLeaf 8s ease-in-out infinite;opacity:0.1;z-index:1;}
+@keyframes floatLeaf{0%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-18px) rotate(12deg);}100%{transform:translateY(0) rotate(0deg);}}
+
+.screen{display:none;flex-direction:column;align-items:center;padding:16px;gap:10px;position:absolute;inset:0;z-index:2;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.screen.on{display:flex;animation:popIn .35s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{opacity:0;transform:scale(.94);}to{opacity:1;transform:scale(1);}}
+
+/* HOME */
+.logo{font-size:64px;line-height:1;margin-top:8px;animation:logoBounce 2.5s ease-in-out infinite;}
+@keyframes logoBounce{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-12px) rotate(3deg);}}
+.title{font-size:32px;font-weight:800;color:#b7e4c7;font-family:Georgia,serif;text-shadow:0 2px 8px #0005;}
+.sub{font-size:13px;color:#95d5b2;font-weight:700;}
+
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:440px;margin-top:4px;}
+.act-card{background:rgba(255,255,255,.13);border:2px solid rgba(255,255,255,.22);border-radius:16px;padding:16px 10px 12px;cursor:pointer;color:white;text-align:center;position:relative;overflow:hidden;transition:transform .15s,background .15s;user-select:none;}
+.act-card:active{transform:scale(.95);background:rgba(255,255,255,.25);}
+.act-card .ico{font-size:30px;margin-bottom:7px;display:block;transition:transform .3s;}
+.act-card:active .ico{transform:scale(1.15);}
+.act-card .lbl{font-size:12px;font-weight:800;line-height:1.3;}
+.act-card .desc{font-size:10px;color:#95d5b2;margin-top:3px;}
+.act-card.new-badge::before{content:'NOVO!';position:absolute;top:7px;right:7px;background:#ffd166;color:#7a4f00;font-size:8px;font-weight:800;border-radius:50px;padding:2px 6px;}
+
+.top-bar{display:flex;justify-content:space-between;align-items:center;width:100%;flex-shrink:0;}
+.back-btn{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);color:white;font-size:13px;font-weight:700;border-radius:50px;padding:7px 16px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.back-btn:active{background:rgba(255,255,255,.32);}
+.badge{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.22);color:#d8f3dc;font-size:13px;font-weight:700;border-radius:50px;padding:7px 14px;}
+
+/* EXPLORAR */
+.part-tabs{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;width:100%;}
+.ptab{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#d8f3dc;font-size:12px;font-weight:700;border-radius:50px;padding:7px 14px;cursor:pointer;transition:all .15s;user-select:none;}
+.ptab:active,.ptab.sel{background:#b7e4c7;color:#1b4332;border-color:#b7e4c7;}
+.info-card{background:rgba(255,255,255,.11);border:2px solid rgba(255,255,255,.2);border-radius:18px;padding:18px;width:100%;max-width:440px;}
+.info-icon{font-size:52px;text-align:center;margin-bottom:8px;animation:iconPulse 2s ease-in-out infinite;}
+@keyframes iconPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.info-name{font-size:19px;font-weight:800;color:#b7e4c7;text-align:center;margin-bottom:5px;}
+.info-simple{font-size:14px;color:#d8f3dc;text-align:center;line-height:1.5;margin-bottom:9px;font-weight:600;}
+.info-detail{font-size:12px;color:#95d5b2;text-align:center;line-height:1.6;}
+.info-tag{display:inline-block;background:rgba(183,228,199,.2);color:#b7e4c7;font-size:10px;font-weight:700;border-radius:50px;padding:3px 9px;margin:3px 2px;border:1px solid rgba(183,228,199,.35);}
+
+/* MONTAGEM */
+.part-slots{display:flex;flex-direction:column;gap:8px;width:100%;}
+.slot{background:rgba(255,255,255,.1);border:2px dashed rgba(255,255,255,.3);border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .2s;}
+.slot.done{border-style:solid;border-color:#52b788;background:rgba(82,183,136,.2);animation:slotPop .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes slotPop{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}
+.slot.wrong{border-color:#f87171;background:rgba(248,113,113,.2);animation:shake .35s;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+.slot-ico{font-size:24px;min-width:32px;text-align:center;}
+.slot-name{font-size:14px;font-weight:700;color:#d8f3dc;}
+.slot-hint{font-size:11px;color:#95d5b2;margin-top:2px;}
+.slot-status{margin-left:auto;font-size:17px;}
+.labels-pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%;}
+.label-chip{background:#b7e4c7;color:#1b4332;font-size:13px;font-weight:800;border-radius:50px;padding:8px 16px;cursor:pointer;transition:all .2s;border:2px solid transparent;user-select:none;}
+.label-chip:active{transform:scale(1.1);}
+.label-chip.used{opacity:.35;pointer-events:none;}
+.label-chip.sel-chip{border-color:#1b4332;background:#52b788;color:white;}
+.result-strip{background:rgba(255,255,255,.1);border-radius:14px;padding:11px 14px;width:100%;text-align:center;display:none;}
+.result-strip.on{display:block;animation:popIn .3s;}
+.result-strip p{font-size:13px;color:#d8f3dc;font-weight:600;}
+
+/* CICLO */
+.ciclo-steps{display:flex;flex-direction:column;gap:9px;width:100%;}
+.ciclo-step{background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.18);border-radius:15px;padding:13px 14px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.ciclo-step::after{content:'';position:absolute;left:0;top:0;height:100%;width:4px;border-radius:4px 0 0 4px;background:#52b788;transform:scaleY(0);transition:transform .3s;transform-origin:top;}
+.ciclo-step.active::after{transform:scaleY(1);}
+.ciclo-step.active{background:rgba(82,183,136,.2);border-color:#52b788;}
+.ciclo-num{width:30px;height:30px;border-radius:50%;background:rgba(183,228,199,.2);border:2px solid rgba(183,228,199,.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#b7e4c7;flex-shrink:0;}
+.ciclo-step.active .ciclo-num{background:#52b788;border-color:#52b788;color:#1b4332;}
+.ciclo-ico{font-size:24px;flex-shrink:0;margin-top:2px;}
+.ciclo-name{font-size:14px;font-weight:800;color:#d8f3dc;}
+.ciclo-sub{font-size:11px;color:#95d5b2;margin-top:2px;}
+.ciclo-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.ciclo-step.active .ciclo-detail{max-height:100px;}
+.ciclo-detail-inner{font-size:12px;color:#b7e4c7;padding-top:8px;line-height:1.55;font-weight:600;}
+
+/* FOTOSSÍNTESE */
+.foto-stage{width:100%;background:rgba(255,255,255,.09);border-radius:16px;padding:16px;border:2px solid rgba(255,255,255,.18);}
+.foto-title{font-size:14px;font-weight:700;color:#b7e4c7;text-align:center;margin-bottom:12px;}
+.foto-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.foto-box{border-radius:11px;padding:9px 11px;text-align:center;font-size:12px;font-weight:700;min-width:70px;}
+.foto-box.in{background:rgba(183,228,199,.25);color:#b7e4c7;border:1.5px solid rgba(183,228,199,.4);}
+.foto-box.out{background:rgba(250,199,117,.25);color:#ffd166;border:1.5px solid rgba(250,199,117,.4);}
+.foto-box.proc{background:rgba(82,183,136,.3);color:#52b788;border:1.5px solid #52b788;}
+.foto-arrow{font-size:18px;color:#95d5b2;font-weight:700;}
+.foto-box .big{font-size:22px;display:block;margin-bottom:3px;}
+.slider-row{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:8px;}
+.slider-row label{font-size:12px;color:#95d5b2;font-weight:700;min-width:55px;}
+.slider-row input[type=range]{flex:1;accent-color:#b7e4c7;}
+.slider-row span{font-size:12px;font-weight:700;color:#b7e4c7;min-width:20px;text-align:right;}
+.foto-result{text-align:center;padding:10px;background:rgba(255,255,255,.08);border-radius:11px;}
+.foto-verdict{font-size:11px;color:#95d5b2;margin-top:4px;}
+
+/* WORD GAME */
+.wg-clues{display:flex;flex-direction:column;gap:8px;width:100%;}
+.wg-clue{background:rgba(255,255,255,.1);border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:9px;}
+.wg-clue-num{width:24px;height:24px;border-radius:50%;background:rgba(183,228,199,.2);border:1.5px solid rgba(183,228,199,.35);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#b7e4c7;flex-shrink:0;}
+.wg-clue-text{font-size:12px;color:#d8f3dc;font-weight:600;flex:1;line-height:1.35;}
+.wg-answer{display:flex;gap:3px;flex-shrink:0;}
+.wg-letter{width:18px;height:22px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#b7e4c7;transition:all .3s;}
+.wg-letter.found{background:rgba(82,183,136,.35);border-color:#52b788;animation:slotPop .4s cubic-bezier(.34,1.56,.64,1);}
+.wg-input-row{display:flex;gap:8px;width:100%;}
+.wg-input{flex:1;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:11px;padding:11px 13px;color:white;font-size:15px;font-weight:700;outline:none;-webkit-appearance:none;}
+.wg-input:focus{border-color:#b7e4c7;}
+.wg-input::placeholder{color:rgba(255,255,255,.35);font-weight:400;}
+.wg-send{background:#b7e4c7;color:#1b4332;font-size:13px;font-weight:800;border:none;border-radius:11px;padding:11px 16px;cursor:pointer;white-space:nowrap;}
+.wg-send:active{transform:scale(.95);}
+.wg-feedback{text-align:center;font-size:13px;font-weight:700;padding:8px;border-radius:10px;display:none;animation:popIn .3s;}
+.wg-feedback.on{display:block;}
+.wg-feedback.ok{background:rgba(82,183,136,.25);color:#52b788;}
+.wg-feedback.no{background:rgba(248,113,113,.2);color:#f87171;}
+.wg-progress{font-size:12px;color:#95d5b2;font-weight:700;text-align:center;}
+
+/* QUIZ */
+.qprog{width:100%;height:7px;background:rgba(255,255,255,.15);border-radius:50px;overflow:hidden;flex-shrink:0;}
+.qprog-fill{height:100%;background:#b7e4c7;border-radius:50px;transition:width .5s cubic-bezier(.34,1.56,.64,1);}
+.q-card{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);border-radius:18px;padding:18px;width:100%;text-align:center;}
+.q-emoji{font-size:44px;display:block;margin-bottom:7px;animation:iconPulse 2s ease-in-out infinite;}
+.q-text{font-size:15px;color:white;font-weight:700;line-height:1.4;}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;}
+.opt{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);border-radius:13px;padding:13px 9px;cursor:pointer;color:white;font-size:13px;font-weight:700;transition:all .15s;min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;user-select:none;}
+.opt:active:not(:disabled){transform:scale(.97);}
+.opt.ok{background:rgba(82,183,136,.45);border-color:#52b788;animation:slotPop .4s cubic-bezier(.34,1.56,.64,1);}
+.opt.no{background:rgba(248,113,113,.35);border-color:#f87171;animation:shake .35s;}
+.opt:disabled{cursor:default;}
+.q-explain{background:rgba(255,255,255,.09);border-radius:13px;padding:11px 14px;width:100%;text-align:center;display:none;}
+.q-explain.on{display:block;animation:popIn .3s;}
+.q-explain p{font-size:12px;color:#d8f3dc;font-weight:600;line-height:1.55;}
+.next-btn{background:#b7e4c7;color:#1b4332;font-size:15px;font-weight:800;border:none;border-radius:50px;padding:13px 30px;cursor:pointer;transition:all .15s;display:none;margin-bottom:16px;}
+.next-btn.on{display:block;animation:popIn .3s;}
+.next-btn:active{transform:scale(.96);}
+
+/* FIM QUIZ */
+.end-icon{font-size:72px;animation:logoBounce 2s ease-in-out infinite;margin-top:20px;}
+.end-title{font-size:28px;font-weight:800;color:#b7e4c7;font-family:Georgia,serif;}
+.end-pts{font-size:54px;font-weight:800;color:#b7e4c7;}
+.end-msg{font-size:14px;color:#d8f3dc;font-weight:600;text-align:center;max-width:300px;line-height:1.5;}
+.home-btn{background:#b7e4c7;color:#1b4332;font-size:16px;font-weight:800;border:none;border-radius:50px;padding:14px 34px;cursor:pointer;margin-bottom:24px;}
+.home-btn:active{transform:scale(.96);}
+
+.confetti-burst{position:absolute;pointer-events:none;font-size:22px;animation:confettiFly 1s ease-out forwards;z-index:99;}
+@keyframes confettiFly{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0;}}
+
+/* iOS safe area */
+.screen{padding-bottom:max(16px, env(safe-area-inset-bottom));}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="floating-leaf" style="top:5%;left:4%;animation-delay:0s;">🍃</div>
+  <div class="floating-leaf" style="top:8%;right:5%;animation-delay:1.5s;font-size:22px;">🌿</div>
+  <div class="floating-leaf" style="top:45%;left:1%;animation-delay:3s;font-size:20px;">🍀</div>
+  <div class="floating-leaf" style="bottom:12%;right:4%;animation-delay:2s;">🌱</div>
+
+  <!-- HOME -->
+  <div class="screen on" id="home">
+    <div class="logo">🌿</div>
+    <div class="title">Mundo das Plantas</div>
+    <div class="sub">7º ano · Ciências da Natureza</div>
+    <div class="act-grid">
+      <div class="act-card" onclick="go('explore');sfx('click')">
+        <span class="ico">🔍</span>
+        <div class="lbl">Explorar as partes</div>
+        <div class="desc">Toque e descubra cada parte</div>
+      </div>
+      <div class="act-card" onclick="go('assembly');sfx('click')">
+        <span class="ico">🧩</span>
+        <div class="lbl">Monte a planta</div>
+        <div class="desc">Coloque cada nome no lugar certo</div>
+      </div>
+      <div class="act-card" onclick="go('ciclo');sfx('click')">
+        <span class="ico">🔄</span>
+        <div class="lbl">Ciclo de vida</div>
+        <div class="desc">Veja como a planta nasce e cresce</div>
+      </div>
+      <div class="act-card" onclick="go('foto');sfx('click')">
+        <span class="ico">☀️</span>
+        <div class="lbl">Fotossíntese</div>
+        <div class="desc">Veja acontecendo na prática</div>
+      </div>
+      <div class="act-card new-badge" onclick="go('wordgame');sfx('click')">
+        <span class="ico">🔤</span>
+        <div class="lbl">Adivinhe a palavra</div>
+        <div class="desc">Leia a dica e escreva a resposta</div>
+      </div>
+      <div class="act-card" onclick="go('quiz');sfx('click')">
+        <span class="ico">⭐</span>
+        <div class="lbl">Quiz final</div>
+        <div class="desc">Teste o que você aprendeu</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPLORAR -->
+  <div class="screen" id="explore">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">🔍 Explorar</div>
+    </div>
+    <div class="part-tabs" id="ptabs"></div>
+    <div class="info-card" id="info-card"></div>
+  </div>
+
+  <!-- MONTAGEM -->
+  <div class="screen" id="assembly">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">🧩 Monte a planta</div>
+    </div>
+    <p style="font-size:13px;color:#95d5b2;font-weight:700;text-align:center;">Toque em um nome e depois no lugar certo!</p>
+    <div class="part-slots" id="slots"></div>
+    <div class="labels-pool" id="chips"></div>
+    <div class="result-strip" id="asm-result"><p id="asm-result-text"></p></div>
+  </div>
+
+  <!-- CICLO -->
+  <div class="screen" id="ciclo">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">🔄 Ciclo de vida</div>
+    </div>
+    <p style="font-size:13px;color:#95d5b2;font-weight:700;text-align:center;">Toque em cada etapa para saber mais!</p>
+    <div class="ciclo-steps" id="ciclo-steps"></div>
+  </div>
+
+  <!-- FOTOSSÍNTESE -->
+  <div class="screen" id="foto">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">☀️ Fotossíntese</div>
+    </div>
+    <div class="foto-stage">
+      <div class="foto-title">Como a planta fabrica seu alimento</div>
+      <div class="foto-row">
+        <div class="foto-box in"><span class="big">💧</span>Água<br><small style="font-weight:400;font-size:10px;">das raízes</small></div>
+        <div class="foto-arrow">+</div>
+        <div class="foto-box in"><span class="big">🌬️</span>CO₂<br><small style="font-weight:400;font-size:10px;">do ar</small></div>
+        <div class="foto-arrow">+</div>
+        <div class="foto-box in"><span class="big">☀️</span>Luz<br><small style="font-weight:400;font-size:10px;">do sol</small></div>
+      </div>
+      <div class="foto-row">
+        <div class="foto-box proc" style="width:100%;"><span class="big">🌿</span>Dentro do cloroplasto</div>
+      </div>
+      <div class="foto-row">
+        <div class="foto-box out"><span class="big">🍬</span>Glicose<br><small style="font-weight:400;font-size:10px;">alimento</small></div>
+        <div class="foto-arrow">+</div>
+        <div class="foto-box out"><span class="big">💨</span>Oxigênio<br><small style="font-weight:400;font-size:10px;">pro ar</small></div>
+      </div>
+    </div>
+    <div class="foto-stage">
+      <div class="foto-title">Brinque com as condições!</div>
+      <div class="slider-row"><label>☀️ Luz</label><input type="range" min="0" max="10" step="1" value="7" id="sl-luz" oninput="calcFoto()"><span id="vl-luz">7</span></div>
+      <div class="slider-row"><label>💧 Água</label><input type="range" min="0" max="10" step="1" value="7" id="sl-agua" oninput="calcFoto()"><span id="vl-agua">7</span></div>
+      <div class="slider-row"><label>🌬️ CO₂</label><input type="range" min="0" max="10" step="1" value="7" id="sl-co2" oninput="calcFoto()"><span id="vl-co2">7</span></div>
+      <div class="foto-result">
+        <div id="foto-bar" style="font-size:18px;letter-spacing:2px;margin-bottom:4px;"></div>
+        <div id="foto-val" style="font-size:15px;font-weight:800;color:#b7e4c7;"></div>
+        <div class="foto-verdict" id="foto-verdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORD GAME -->
+  <div class="screen" id="wordgame">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">🔤 <span id="wg-score-badge">0</span> pts</div>
+    </div>
+    <div style="width:100%;">
+      <div class="wg-clues" id="wg-clues"></div>
+      <div class="wg-progress" id="wg-progress" style="margin:8px 0;"></div>
+      <div class="wg-input-row" style="margin-bottom:8px;">
+        <input class="wg-input" id="wg-input" placeholder="Digite a resposta..." oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')checkWord()">
+        <button class="wg-send" onclick="checkWord()">✓ OK</button>
+      </div>
+      <div class="wg-feedback" id="wg-feedback"></div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="quiz">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('home');sfx('click')">← Voltar</button>
+      <div class="badge">⭐ <span id="q-pts">0</span> pts</div>
+    </div>
+    <div class="qprog"><div class="qprog-fill" id="qprog-fill" style="width:0%"></div></div>
+    <p style="font-size:11px;color:#95d5b2;font-weight:700;align-self:flex-end;">Pergunta <span id="qnum">1</span> de <span id="qtot">6</span></p>
+    <div class="q-card">
+      <span class="q-emoji" id="q-emoji">🌱</span>
+      <div class="q-text" id="q-text">...</div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="q-explain" id="q-explain"><p id="q-explain-p"></p></div>
+    <button class="next-btn" id="next-btn" onclick="nextQ()">Próxima →</button>
+  </div>
+
+  <!-- FIM QUIZ -->
+  <div class="screen" id="quiz-end">
+    <div class="end-icon" id="end-icon">🏆</div>
+    <div class="end-title" id="end-title">Incrível!</div>
+    <div style="font-size:28px;letter-spacing:4px;" id="end-stars">⭐⭐⭐</div>
+    <div class="end-pts" id="end-pts">0</div>
+    <p style="font-size:12px;color:#95d5b2;font-weight:700;">pontos conquistados</p>
+    <div class="end-msg" id="end-msg"></div>
+    <button class="home-btn" onclick="go('home');sfx('win')">🏠 Início</button>
+  </div>
+</div>
+
+<script>
+const PARTS=[
+  {id:'raiz',label:'Raiz',icon:'🌱',simple:'A parte da planta que fica debaixo da terra.',detail:'Ela bebe água e pega os sais minerais do solo. É como a "boca" da planta! Também segura a planta firme no chão.',tags:['Absorção de água','Fixação no solo','Seiva bruta']},
+  {id:'caule',label:'Caule',icon:'🪵',simple:'O "cano" que leva água e comida pela planta.',detail:'Dentro do caule tem dois tipos de cano: o xilema leva água das raízes até as folhas, e o floema leva o alimento (glicose) das folhas para o resto da planta.',tags:['Transporte','Xilema','Floema']},
+  {id:'folha',label:'Folha',icon:'🍃',simple:'A "fábrica de alimento" da planta.',detail:'Aqui acontece a fotossíntese! As folhas têm cloroplastos (que são verdes) e captam a luz do sol para fabricar glicose. Também têm pequenos buracos chamados estômatos.',tags:['Fotossíntese','Cloroplasto','Estômatos']},
+  {id:'flor',label:'Flor',icon:'🌸',simple:'A parte colorida que serve para a planta se reproduzir.',detail:'A flor tem pólen (pó que os insetos levam) e ovário (que vai virar fruto). Quando o pólen de uma flor encontra o ovário de outra, acontece a fecundação!',tags:['Reprodução','Polinização','Fecundação']},
+  {id:'fruto',label:'Fruto',icon:'🍎',simple:'A casca que protege a semente.',detail:'O fruto nasce depois que a flor é fecundada. Ele protege a semente e ajuda a espalhá-la — quando um animal come o fruto, carrega as sementes para outros lugares.',tags:['Proteção','Dispersão']},
+  {id:'semente',label:'Semente',icon:'🫘',simple:'O "ovo" da planta, que vai gerar uma nova planta.',detail:'Dentro da semente tem um embrião (uma plantinha pequenininha) e reservas de alimento para ela crescer. Quando cai num lugar com água, terra e luz, ela germina!',tags:['Embrião','Germinação']},
+];
+const ASM_ITEMS=[
+  {id:'raiz',icon:'🌱',label:'Raiz',hint:'Fica embaixo da terra, absorve água'},
+  {id:'caule',icon:'🪵',label:'Caule',hint:'Liga todas as partes, transporta seiva'},
+  {id:'folha',icon:'🍃',label:'Folha',hint:'Faz a fotossíntese com o sol'},
+  {id:'flor',icon:'🌸',label:'Flor',hint:'Onde começa a reprodução'},
+  {id:'fruto',icon:'🍎',label:'Fruto',hint:'Protege a semente'},
+];
+const CICLO_STEPS=[
+  {num:'1',ico:'🫘',name:'Semente',sub:'Tudo começa aqui',detail:'A semente tem um embrião dentro, que é uma plantinha pequenininha. Com água, terra e luz, ela acorda e começa a crescer!'},
+  {num:'2',ico:'🌱',name:'Germinação',sub:'A semente acorda!',detail:'A semente absorve água, incha e a casca se abre. A primeira raizinha vai para o solo e o primeiro caule sobe em busca da luz. Isso é germinação!'},
+  {num:'3',ico:'🌿',name:'Plântula',sub:'A plantinha bebê',detail:'As primeiras folhinhas aparecem. Agora a planta já consegue fazer fotossíntese e produzir seu próprio alimento!'},
+  {num:'4',ico:'🌳',name:'Planta adulta',sub:'Cresceu e está completa!',detail:'A planta tem raízes fundo no solo, caule forte e muitas folhas. Ela produz bastante glicose pela fotossíntese.'},
+  {num:'5',ico:'🌸',name:'Floração',sub:'Aparecem as flores!',detail:'A planta produz flores para se reproduzir. As flores atraem insetos como abelhas, que levam o pólen de uma flor para outra — isso é polinização!'},
+  {num:'6',ico:'🍎',name:'Fruto e semente',sub:'O ciclo recomeça!',detail:'Após a polinização, o ovário da flor vira fruto e a semente fica dentro. Animais comem o fruto, espalham as sementes, e o ciclo recomeça!'},
+];
+const WORD_CLUES=[
+  {clue:'Parte da planta que fica no solo e absorve água',answer:'RAIZ'},
+  {clue:'Organela verde que faz a fotossíntese',answer:'CLOROPLASTO'},
+  {clue:'Gás que a planta libera no ar durante a fotossíntese',answer:'OXIGENIO'},
+  {clue:'Pequenos buracos nas folhas por onde o ar entra e sai',answer:'ESTOMATOS'},
+  {clue:'Alimento (açúcar) fabricado pela planta na fotossíntese',answer:'GLICOSE'},
+  {clue:'Processo pelo qual a semente começa a crescer',answer:'GERMINACAO'},
+  {clue:'Parte da planta que protege a semente',answer:'FRUTO'},
+  {clue:'Tecido do caule que leva água das raízes até as folhas',answer:'XILEMA'},
+];
+const QUESTIONS=[
+  {e:'🌱',q:'O que a raiz faz pela planta?',opts:['Faz fotossíntese','Absorve água e sais minerais','Produz as flores','Carrega o pólen'],c:1,exp:'A raiz bebe a água do solo e pega os sais minerais que a planta precisa para viver. É a "boca" da planta!'},
+  {e:'🍃',q:'Por que as folhas são verdes?',opts:['Por causa do sol','Por causa da água','Por causa da clorofila','Por causa do CO₂'],c:2,exp:'As folhas têm cloroplastos com um pigmento chamado clorofila. Ela é verde e captura a energia da luz do sol.'},
+  {e:'☀️',q:'O que a planta usa para fabricar seu alimento?',opts:['Terra, adubo e calor','Luz solar, água e CO₂','Água, oxigênio e glicose','Só a luz do sol'],c:1,exp:'Na fotossíntese, a planta usa luz solar, água e gás carbônico (CO₂) para fabricar glicose!'},
+  {e:'💨',q:'O que a planta libera no ar durante a fotossíntese?',opts:['Gás carbônico (CO₂)','Nitrogênio','Oxigênio (O₂)','Vapor de água'],c:2,exp:'A fotossíntese libera oxigênio! Por isso as plantas são essenciais: elas produzem o ar que respiramos!'},
+  {e:'🌸',q:'Para que serve a flor?',opts:['Para a planta respirar','Para a reprodução da planta','Para absorver água','Para fazer fotossíntese'],c:1,exp:'A flor tem as estruturas de reprodução. Após a polinização, o ovário vira fruto e a semente fica dentro.'},
+  {e:'🔄',q:'O que é germinação?',opts:['A planta perdendo as folhas','Quando a semente começa a crescer','A planta florescendo','A formação do fruto'],c:1,exp:'Germinação é quando a semente absorve água, abre e começa a crescer! A raizinha vai para baixo e o caule vai para cima.'},
+];
+
+let selPart=0,selChip=null,asmState={},qIdx=0,qScore=0,qAnswered=false,wgIdx=0,wgScore=0,wgOrder=[];
+
+// AUDIO
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null;
+function getCtx(){if(!audioCtx)try{audioCtx=new AudioCtx();}catch(e){}return audioCtx;}
+function sfx(type){
+  const ctx=getCtx();if(!ctx)return;
+  const now=ctx.currentTime;
+  if(type==='click'){const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.setValueAtTime(440,now);o.frequency.exponentialRampToValueAtTime(550,now+.06);g.gain.setValueAtTime(.12,now);g.gain.exponentialRampToValueAtTime(.001,now+.12);o.start(now);o.stop(now+.13);}
+  else if(type==='correct'){[523,659,784].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;g.gain.setValueAtTime(.15,now+i*.1);g.gain.exponentialRampToValueAtTime(.001,now+i*.1+.25);o.start(now+i*.1);o.stop(now+i*.1+.26);});}
+  else if(type==='wrong'){const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type='sawtooth';o.frequency.setValueAtTime(200,now);o.frequency.exponentialRampToValueAtTime(100,now+.25);g.gain.setValueAtTime(.1,now);g.gain.exponentialRampToValueAtTime(.001,now+.25);o.start(now);o.stop(now+.26);}
+  else if(type==='win'){[523,659,784,1047].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;g.gain.setValueAtTime(.18,now+i*.12);g.gain.exponentialRampToValueAtTime(.001,now+i*.12+.35);o.start(now+i*.12);o.stop(now+i*.12+.36);});}
+}
+
+function burst(el){
+  const rect=el.getBoundingClientRect(),app=document.getElementById('app').getBoundingClientRect();
+  const emojis=['✨','🌟','⭐','🌿','🍃'];
+  for(let i=0;i<7;i++){
+    const d=document.createElement('div');d.className='confetti-burst';
+    d.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    const angle=Math.random()*Math.PI*2,dist=50+Math.random()*55;
+    d.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+    d.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+    d.style.left=(rect.left-app.left+rect.width/2)+'px';
+    d.style.top=(rect.top-app.top+rect.height/2)+'px';
+    document.getElementById('app').appendChild(d);
+    setTimeout(()=>d.remove(),1100);
+  }
+}
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('on');s.scrollTop=0;});
+  document.getElementById(id).classList.add('on');
+  if(id==='explore')initExplore();
+  if(id==='assembly')initAssembly();
+  if(id==='ciclo')initCiclo();
+  if(id==='foto')calcFoto();
+  if(id==='wordgame')initWordGame();
+  if(id==='quiz')initQuiz();
+}
+
+function initExplore(){
+  const tabs=document.getElementById('ptabs');tabs.innerHTML='';
+  PARTS.forEach((p,i)=>{
+    const b=document.createElement('button');b.className='ptab'+(i===0?' sel':'');b.textContent=p.icon+' '+p.label;
+    b.onclick=()=>{document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selPart=i;renderInfo();sfx('click');};
+    tabs.appendChild(b);
+  });
+  selPart=0;renderInfo();
+}
+function renderInfo(){
+  const p=PARTS[selPart];
+  document.getElementById('info-card').innerHTML=`<div class="info-icon">${p.icon}</div><div class="info-name">${p.label}</div><div class="info-simple">${p.simple}</div><div class="info-detail">${p.detail}</div><div style="margin-top:10px;text-align:center;">${p.tags.map(t=>`<span class="info-tag">${t}</span>`).join('')}</div>`;
+}
+
+function initAssembly(){
+  asmState={};selChip=null;
+  const slots=document.getElementById('slots');slots.innerHTML='';
+  ASM_ITEMS.forEach(item=>{
+    asmState[item.id]=false;
+    const d=document.createElement('div');d.className='slot';d.id='slot-'+item.id;
+    d.innerHTML=`<div class="slot-ico">${item.icon}</div><div><div class="slot-name">?????</div><div class="slot-hint">${item.hint}</div></div><div class="slot-status" id="st-${item.id}">○</div>`;
+    d.onclick=()=>onSlotClick(item.id);slots.appendChild(d);
+  });
+  const pool=document.getElementById('chips');pool.innerHTML='';
+  [...ASM_ITEMS].sort(()=>Math.random()-.5).forEach(item=>{
+    const c=document.createElement('div');c.className='label-chip';c.id='chip-'+item.id;c.textContent=item.label;
+    c.onclick=()=>onChipClick(item.id,c);pool.appendChild(c);
+  });
+  document.getElementById('asm-result').classList.remove('on');
+}
+function onChipClick(id,el){
+  if(el.classList.contains('used'))return;
+  document.querySelectorAll('.label-chip').forEach(c=>c.classList.remove('sel-chip'));
+  if(selChip===id){selChip=null;return;}
+  selChip=id;el.classList.add('sel-chip');sfx('click');
+}
+function onSlotClick(slotId){
+  if(!selChip)return;
+  const slot=document.getElementById('slot-'+slotId);
+  if(slot.classList.contains('done'))return;
+  if(selChip===slotId){
+    slot.classList.add('done');
+    slot.querySelector('.slot-name').textContent=ASM_ITEMS.find(x=>x.id===slotId).label;
+    document.getElementById('st-'+slotId).textContent='✅';
+    document.getElementById('chip-'+selChip).classList.add('used');
+    document.getElementById('chip-'+selChip).classList.remove('sel-chip');
+    asmState[slotId]=true;selChip=null;sfx('correct');burst(slot);checkAssembly();
+  } else {
+    slot.classList.add('wrong');setTimeout(()=>slot.classList.remove('wrong'),400);
+    document.getElementById('chip-'+selChip).classList.remove('sel-chip');selChip=null;sfx('wrong');
+  }
+}
+function checkAssembly(){
+  const done=Object.values(asmState).filter(Boolean).length,total=ASM_ITEMS.length;
+  document.getElementById('asm-result-text').textContent=done===total?'🎉 Você montou a planta completa! Incrível!':`✅ ${done} de ${total} partes no lugar certo. Continue!`;
+  document.getElementById('asm-result').classList.add('on');
+  if(done===total)sfx('win');
+}
+
+function initCiclo(){
+  const container=document.getElementById('ciclo-steps');container.innerHTML='';
+  CICLO_STEPS.forEach((step,i)=>{
+    const d=document.createElement('div');d.className='ciclo-step'+(i===0?' active':'');
+    d.innerHTML=`<div class="ciclo-num">${step.num}</div><div class="ciclo-ico">${step.ico}</div><div style="flex:1"><div class="ciclo-name">${step.name}</div><div class="ciclo-sub">${step.sub}</div><div class="ciclo-detail"><div class="ciclo-detail-inner">${step.detail}</div></div></div>`;
+    d.onclick=()=>{document.querySelectorAll('.ciclo-step').forEach(s=>s.classList.remove('active'));d.classList.add('active');sfx('click');};
+    container.appendChild(d);
+  });
+}
+
+function calcFoto(){
+  const luz=parseInt(document.getElementById('sl-luz').value);
+  const agua=parseInt(document.getElementById('sl-agua').value);
+  const co2=parseInt(document.getElementById('sl-co2').value);
+  document.getElementById('vl-luz').textContent=luz;
+  document.getElementById('vl-agua').textContent=agua;
+  document.getElementById('vl-co2').textContent=co2;
+  const pct=Math.min(Math.round(luz*agua*co2/1000*100),100);
+  const bars=Math.round(pct/10);
+  document.getElementById('foto-bar').textContent='🌿'.repeat(bars)+'○'.repeat(10-bars);
+  document.getElementById('foto-val').textContent=pct+'% de fotossíntese';
+  let v='';
+  if(luz===0)v='💡 Sem luz, a fotossíntese para!';
+  else if(agua===0)v='💧 Sem água a planta não produz alimento.';
+  else if(co2===0)v='🌬️ Sem CO₂ a planta não tem matéria-prima.';
+  else if(pct>=70)v='🌟 A planta está produzindo muito alimento!';
+  else if(pct>=30)v='😊 A planta consegue se alimentar, mas pode melhorar.';
+  else v='⚠️ Condições baixas — a planta está fraca.';
+  document.getElementById('foto-verdict').textContent=v;
+}
+
+function initWordGame(){
+  wgScore=0;wgOrder=[...WORD_CLUES].map((_,i)=>i).sort(()=>Math.random()-.5);wgIdx=0;
+  document.getElementById('wg-score-badge').textContent=0;
+  document.getElementById('wg-input').disabled=false;
+  renderWordClue();
+}
+function renderWordClue(){
+  const container=document.getElementById('wg-clues');container.innerHTML='';
+  const remaining=wgOrder.slice(wgIdx,wgIdx+3);
+  remaining.forEach((ci,i)=>{
+    const clue=WORD_CLUES[ci];
+    const div=document.createElement('div');div.className='wg-clue';
+    const letters=clue.answer.split('').map(()=>`<div class="wg-letter">_</div>`).join('');
+    div.innerHTML=`<div class="wg-clue-num">${wgIdx+i+1}</div><div class="wg-clue-text">${clue.clue}</div><div class="wg-answer">${letters}</div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('wg-progress').textContent=`Palavra ${wgIdx+1} de ${WORD_CLUES.length} — sem acento`;
+  document.getElementById('wg-input').value='';
+  document.getElementById('wg-feedback').classList.remove('on','ok','no');
+}
+function normalize(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');}
+function checkWord(){
+  if(wgIdx>=wgOrder.length)return;
+  const ci=wgOrder[wgIdx],clue=WORD_CLUES[ci];
+  const input=normalize(document.getElementById('wg-input').value);
+  const answer=normalize(clue.answer);
+  const fb=document.getElementById('wg-feedback');
+  if(input===answer){
+    sfx('correct');wgScore+=15;document.getElementById('wg-score-badge').textContent=wgScore;
+    const letters=document.querySelectorAll('.wg-letter');
+    letters.forEach((l,i)=>{if(i<clue.answer.length){l.textContent=clue.answer[i];l.classList.add('found');}});
+    fb.textContent='🎉 Correto! A resposta é: '+clue.answer;
+    fb.className='wg-feedback on ok';
+    burst(document.getElementById('wg-clues').firstChild||document.getElementById('wg-clues'));
+    setTimeout(()=>{
+      wgIdx++;
+      if(wgIdx>=wgOrder.length){fb.textContent='🏆 Parabéns! Você completou tudo! Total: '+wgScore+' pontos!';document.getElementById('wg-input').disabled=true;sfx('win');}
+      else renderWordClue();
+    },1600);
+  } else {
+    sfx('wrong');
+    fb.textContent='🤔 Não é essa... Dica: tem '+clue.answer.length+' letras.';
+    fb.className='wg-feedback on no';
+    document.getElementById('wg-input').select();
+  }
+}
+
+function initQuiz(){qIdx=0;qScore=0;qAnswered=false;document.getElementById('q-pts').textContent=0;renderQ();}
+function renderQ(){
+  qAnswered=false;const q=QUESTIONS[qIdx];
+  document.getElementById('qnum').textContent=qIdx+1;
+  document.getElementById('qtot').textContent=QUESTIONS.length;
+  document.getElementById('qprog-fill').style.width=Math.round(qIdx/QUESTIONS.length*100)+'%';
+  document.getElementById('q-emoji').textContent=q.e;
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-explain').classList.remove('on');
+  document.getElementById('next-btn').classList.remove('on');
+  const opts=document.getElementById('opts');opts.innerHTML='';
+  [0,1,2,3].sort(()=>Math.random()-.5).forEach(i=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=q.opts[i];b.dataset.i=i;
+    b.onclick=()=>answerQ(b,i,q);opts.appendChild(b);
+  });
+}
+function answerQ(btn,idx,q){
+  if(qAnswered)return;qAnswered=true;
+  document.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(parseInt(b.dataset.i)===q.c)b.classList.add('ok');});
+  if(idx!==q.c){btn.classList.add('no');sfx('wrong');}
+  else{qScore+=20;document.getElementById('q-pts').textContent=qScore;sfx('correct');burst(btn);}
+  document.getElementById('q-explain-p').textContent=(idx===q.c?'🎉 Certo! ':'🤔 Quase lá! ')+q.exp;
+  document.getElementById('q-explain').classList.add('on');
+  document.getElementById('next-btn').textContent=qIdx<QUESTIONS.length-1?'Próxima →':'Ver resultado 🏆';
+  document.getElementById('next-btn').classList.add('on');
+}
+function nextQ(){
+  qIdx++;sfx('click');
+  if(qIdx>=QUESTIONS.length){
+    go('quiz-end');
+    const pct=qScore/(QUESTIONS.length*20);
+    document.getElementById('end-pts').textContent=qScore;
+    if(pct>=.8){document.getElementById('end-icon').textContent='🏆';document.getElementById('end-title').textContent='Você arrasou!';document.getElementById('end-stars').textContent='⭐⭐⭐';document.getElementById('end-msg').textContent='Que aluno incrível! Você domina botânica!';}
+    else if(pct>=.5){document.getElementById('end-icon').textContent='🌿';document.getElementById('end-title').textContent='Muito bom!';document.getElementById('end-stars').textContent='⭐⭐';document.getElementById('end-msg').textContent='Você foi bem! Revise o que errou e tente de novo!';}
+    else{document.getElementById('end-icon').textContent='🌱';document.getElementById('end-title').textContent='Continue tentando!';document.getElementById('end-stars').textContent='⭐';document.getElementById('end-msg').textContent='Explore as outras atividades e volte para o quiz!';}
+    sfx('win');
+  } else renderQ();
+}
+
+// Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
